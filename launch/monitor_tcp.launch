@@ -1,0 +1,12 @@
+<launch>
+  <arg name="id" default="10" />
+  <node pkg="tcp_interface" type="tcp_interface" name="tcp_monitor" output="screen">
+	  <param name="TCP_server_port" value="90$(arg id)"/>
+      <param name="UDP_server_port" value="91$(arg id)"/>
+      <param name="network_interface" value="wlan0"/>
+      <param name="UDP_team_min_port" value="9100"/>
+      <param name="UDP_team_max_port" value="9115"/>
+      <param name="config_file" value="$(find tcp_interface)/config/UDPpeers.cfg"/>
+      <param name="robot_name" value="monitor"/>
+    </node>
+</launch>
