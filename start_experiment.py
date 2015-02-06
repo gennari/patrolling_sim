@@ -134,7 +134,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     print cmd_monitor
     print cmd_stage
     if (TERM == 'xterm'):
-        os.system('xterm -e  "'+cmd_monitor+'" &') 
+        os.system('xterm -e "'+cmd_monitor+'" &') 
         os.system('xterm -e  "'+cmd_stage+'" &')
     else:
         os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor+'\'" --tab -e "bash -c \''+cmd_stage+'\'" &')
@@ -150,7 +150,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     gcmd = 'gnome-terminal '
     for i in range(0,int(NROBOTS)):
         print 'Run robot ',i
-        cmd = 'bash -c \'roslaunch patrolling_sim '+robot_launch+' robotname:=robot_'+str(i)+' mapname:='+MAP+'\''
+        cmd = 'bash -c \'roslaunch patrolling_sim '+robot_launch+' robotname:=robot_'+str(i)+' robotid:='+str(i)+' mapname:='+MAP+'\''
         print cmd
         if (TERM == 'xterm'):
 	  os.system('xterm -e  "'+cmd+'" &')

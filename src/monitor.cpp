@@ -52,6 +52,7 @@
 #include <tf/transform_listener.h>
 //#include <geometry_msgs/PointStamped.h>	
 #include <std_msgs/Int16MultiArray.h>
+#include <tcp_interface/RCOMMessage.h>
 
 using namespace std;
 
@@ -110,23 +111,54 @@ void getRobotPose(int robotid, float &x, float &y, float &theta) {
     y = transform.getOrigin().y();
     theta = tf::getYaw(transform.getRotation());
 }
+void do_send_message(std_msgs::Int16MultiArray &msg) {
+    std::stringstream ss;
 
+    for (std::vector<signed short>::iterator it = msg.data.begin(); it != msg.data.end(); ++it) {
+       ss << *it <<" ";
+    }
+    std::string s = ss.str();
 
-void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
+    //results_pub.publish(msg);
+    tcp_interface::RCOMMessage m;
+    m.header.stamp = ros::Time::now();
+    m.robotreceiver="all";
+    m.robotsender="monitor";
+    m.value=s;
+    results_pub.publish(m);
+    ros::spinOnce();
+}
 
-    std::vector<signed short>::const_iterator it = msg->data.begin();    
+void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
+    //void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
+
+    /*std::vector<signed short>::const_iterator it = msg->data.begin();
     
-    std::vector<int> vresults;
+
     
     vresults.clear();
     
     for (int k=0; k<msg->data.size(); k++) {
         vresults.push_back(*it); it++;
     }
+    */
+    std::vector<int> vresults;
+    signed short buf;
+
+    string message;
+    message =msg->value;
+    stringstream ss(message); // Insert the string into a stream
+    //vector<string> tokens; // Create vector to hold our words
+    printf(" MESSAGE RECEIVED %s \n",message.c_str());
+    while (ss >> buf){
+        //tokens.push_back(buf);
+         vresults.push_back(buf);
+    }
+
 
     id_robot = vresults[0];
     int msg_type = vresults[1];
-        
+       printf(" MESSAGE FROM %d TYPE %d ...\n",id_robot, msg_type);
 /*
     int p1 = *it; //data[0]
     ++it;
@@ -160,7 +192,8 @@ void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [
                 msg.data.push_back(-1);
                 msg.data.push_back(INITIALIZE_MSG_TYPE);
                 msg.data.push_back(100);  // Go !!!
-                results_pub.publish(msg);
+                //results_pub.publish(msg);
+                do_send_message(msg);
                 ros::spinOnce();			
             }
             
@@ -215,6 +248,10 @@ void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [
             }*/
             break;
         }
+    case POSITION_MSG_TYPE:
+    {
+        break;
+    }
     }
 }
 
@@ -224,7 +261,8 @@ void finish_simulation (){ //-1,msg_type,1,0,0
 	msg.data.push_back(-1);
 	msg.data.push_back(INITIALIZE_MSG_TYPE);
 	msg.data.push_back(999);  // end of the simulation
-	results_pub.publish(msg);
+    //results_pub.publish(msg);
+    do_send_message(msg);
 	ros::spinOnce();	
 }
 
@@ -357,7 +395,7 @@ double Median( double *a, uint dimension )
 
 uint calculate_patrol_cycle ( int *nr_visits, uint dimension ){
 	int result = INT_MAX;
-	int imin=0;
+    int imin=0;
 	for (int i=0; i<(int)dimension; i++){
 		if (nr_visits[i] < result){
 			result = nr_visits[i]; imin=i;
@@ -434,7 +472,7 @@ void write_results (double *avg_idleness, double *stddev_idleness, int *number_o
 
 bool check_dead_robots() {
     double current_time = ros::Time::now().toSec();
-    for (int i=0; i<teamsize; i++) {        
+    for (int i=0; i<(int)teamsize; i++) {
       double delta = current_time - last_goal_reached[i];
       // printf("DEBUG dead robot: %d   %.1f - %.1f = %.1f\n",i,current_time,last_goal_reached[i],delta);
       if (delta>DEAD_ROBOT_TIME*0.75) {
@@ -581,10 +619,12 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
 	ros::NodeHandle nh;
 	
 	//Subscrever "results" vindo dos robots
-	results_sub = nh.subscribe("results", 100, resultsCB); 	
+    results_sub = nh.subscribe("RCOMMessage", 100, resultsCB);
+    //results_sub = nh.subscribe("results", 100, resultsCB);
 	
 	//Publicar dados para "results"
-	results_pub = nh.advertise<std_msgs::Int16MultiArray>("results", 100);
+    results_pub = nh.advertise<tcp_interface::RCOMMessage>("/RCOMMessage", 100);
+    //results_pub = nh.advertise<std_msgs::Int16MultiArray>("results", 100);
 	
   listener = new tf::TransformListener();
     
@@ -601,7 +641,7 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
 
 	while( ros::ok() ){
 		
-		if (!initialize){	//check if msg is goal or interference -> compute necessary results.
+        if (!initialize) {	//check if msg is goal or interference -> compute necessary results.
 			
 			if (interference){
 				interference_cnt++;
@@ -677,7 +717,7 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
 			double report_time = ros::Time::now().toSec();
             //printf("report time=%.1f\n",report_time);
 			
-			if ((patrol_cnt == complete_patrol) || (report_time - last_report_time>MAX_EXPERIMENT_TIME)){ 
+            if ((patrol_cnt == complete_patrol) || (report_time - last_report_time>MAX_EXPERIMENT_TIME)) {
                     //write results every time a patrolling cycle is finished.
                     //or after some time
 				previous_avg_graph_idl = avg_graph_idl; //save previous avg idleness graph value

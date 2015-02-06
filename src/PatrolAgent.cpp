@@ -45,12 +45,13 @@
 #include <nav_msgs/Odometry.h>
 
 
+
 #include "PatrolAgent.h"
 
 using namespace std;
 
 void PatrolAgent::init(int argc, char** argv) {
-        /*
+    /*
             argv[0]=/.../patrolling_sim/bin/GBS
             argv[1]=__name:=XXXXXX
             argv[2]=grid
@@ -61,13 +62,13 @@ void PatrolAgent::init(int argc, char** argv) {
     
     //More than One robot (ID between 0 and 99)
     if ( atoi(argv[3])>NUM_MAX_ROBOTS || atoi(argv[3])<-1 ){
-        ROS_INFO("The Robot's ID must be an integer number between 0 an 99"); //max 100 robots 
+        ROS_INFO("The Robot's ID must be an integer number between 0 an 99"); //max 100 robots
         return;
     }else{
-        ID_ROBOT = atoi(argv[3]); 
+        ID_ROBOT = atoi(argv[3]);
         //printf("ID_ROBOT = %d\n",ID_ROBOT); //-1 in the case there is only 1 robot.
     }
-                
+
     mapname = string(argv[2]);
     graph_file = "maps/"+mapname+"/"+mapname+".graph";
     
@@ -81,20 +82,20 @@ void PatrolAgent::init(int argc, char** argv) {
     GetGraphInfo(vertex_web, dimension, graph_file.c_str());
 
 #if 0
-    /* Output Graph Data */   
+    /* Output Graph Data */
     for (i=0;i<dimension;i++){
         printf ("ID= %u\n", vertex_web[i].id);
         printf ("X= %f, Y= %f\n", vertex_web[i].x, vertex_web[i].y);
         printf ("#Neigh= %u\n", vertex_web[i].num_neigh);
         
         for (j=0;j<vertex_web[i].num_neigh; j++){
-        printf("\tID = %u, DIR = %s, COST = %u\n", vertex_web[i].id_neigh[j], vertex_web[i].dir[j], vertex_web[i].cost[j]);
+            printf("\tID = %u, DIR = %s, COST = %u\n", vertex_web[i].id_neigh[j], vertex_web[i].dir[j], vertex_web[i].cost[j]);
         }
         
-        printf("\n");   
+        printf("\n");
     }
 #endif
-      
+
     interference = false;
     ResendGoal = false;
     goal_complete = true;
@@ -131,40 +132,40 @@ void PatrolAgent::init(int argc, char** argv) {
     
     //   printf("initial position: x = %f, y = %f\n", initial_x, initial_y);
     current_vertex = IdentifyVertex(vertex_web, dimension, initial_x, initial_y);
-    //   printf("initial vertex = %d\n\n",current_vertex);  
+    //   printf("initial vertex = %d\n\n",current_vertex);
     
     
     //instantaneous idleness and last visit initialized with zeros:
     instantaneous_idleness = new double[dimension];
     last_visit = new double[dimension];
-    for(size_t i=0; i<dimension; i++){ 
-        instantaneous_idleness[i]= 0.0; 
-        last_visit[i]= 0.0; 
+    for(size_t i=0; i<dimension; i++){
+        instantaneous_idleness[i]= 0.0;
+        last_visit[i]= 0.0;
         
         if (i==current_vertex){
             last_visit[i]= 0.1; //Avoids getting back at the initial vertex
         }
         //ROS_INFO("last_visit[%d]=%f", i, last_visit[i]);
     }
-        
+
     //Publicar dados de "odom" para nó de posições
-    positions_pub = nh.advertise<nav_msgs::Odometry>("positions", 1); //only concerned about the most recent
-        
+    //positions_pub = nh.advertise<nav_msgs::Odometry>("positions", 1); //only concerned about the most recent
+
     //Subscrever posições de outros robots
-    positions_sub = nh.subscribe<nav_msgs::Odometry>("positions", 10, boost::bind(&PatrolAgent::positionsCB, this, _1));  
+    //positions_sub = nh.subscribe<nav_msgs::Odometry>("positions", 10, boost::bind(&PatrolAgent::positionsCB, this, _1));
     
     char string1[40];
     char string2[40];
     
-    if(ID_ROBOT==-1){ 
+    if(ID_ROBOT==-1){
         strcpy (string1,"odom"); //string = "odom"
         strcpy (string2,"cmd_vel"); //string = "cmd_vel"
         TEAMSIZE = 1;
-    }else{ 
+    }else{
         sprintf(string1,"robot_%d/odom",ID_ROBOT);
         sprintf(string2,"robot_%d/cmd_vel",ID_ROBOT);
         TEAMSIZE = ID_ROBOT + 1;
-    }   
+    }
 
     /* Set up listener for global coordinates of robots */
     listener = new tf::TransformListener();
@@ -175,37 +176,38 @@ void PatrolAgent::init(int argc, char** argv) {
     //Subscrever para obter dados de "odom" do robot corrente
     odom_sub = nh.subscribe<nav_msgs::Odometry>(string1, 1, boost::bind(&PatrolAgent::odomCB, this, _1)); //size of the buffer = 1 (?)
     
-    ros::spinOnce(); 
+    ros::spinOnce();
     
     //Publicar dados para "results"
-    results_pub = nh.advertise<std_msgs::Int16MultiArray>("results", 100);
+    //results_pub = nh.advertise<std_msgs::Int16MultiArray>("results", 100);
     // results_sub = nh.subscribe("results", 10, resultsCB); //Subscrever "results" vindo dos robots
-    results_sub = nh.subscribe<std_msgs::Int16MultiArray>("results", 100, boost::bind(&PatrolAgent::resultsCB, this, _1) ); //Subscrever "results" vindo dos robots
-
+    //results_sub = nh.subscribe<std_msgs::Int16MultiArray>("results", 100, boost::bind(&PatrolAgent::resultsCB, this, _1) ); //Subscrever "results" vindo dos robots
+    rcom_pub =nh.advertise<tcp_interface::RCOMMessage>("RCOMMessage",100);
+    rcom_sub =nh.subscribe<tcp_interface::RCOMMessage>("RCOMMessage",100, boost::bind(&PatrolAgent::resultsCB, this, _1) );
     // last time comm delay has been applied
-    last_communication_delay_time = ros::Time::now().toSec();   
+    last_communication_delay_time = ros::Time::now().toSec();
 
     readParams();
 }
-    
+
 void PatrolAgent::ready() {
     
     char string1[40];
     
     /* Define Goal */
-    if(ID_ROBOT==-1){ 
+    if(ID_ROBOT==-1){
         strcpy (string1,"move_base"); //string = "move_base
     }else{
         sprintf(string1,"robot_%d/move_base",ID_ROBOT);
     }
     
     //printf("string = %s\n",string);
-    ac = new MoveBaseClient(string1, true); 
+    ac = new MoveBaseClient(string1, true);
     
     //wait for the action server to come up
     while(!ac->waitForServer(ros::Duration(5.0))){
         ROS_INFO("Waiting for the move_base action server to come up");
-    } 
+    }
     ROS_INFO("Connected with move_base action server");
     
     initialize_node(); //dizer q está vivo
@@ -216,7 +218,7 @@ void PatrolAgent::ready() {
     while(initialize){
         ros::spinOnce();
         loop_rate.sleep();
-    }    
+    }
 
 }
 
@@ -224,18 +226,18 @@ void PatrolAgent::ready() {
 void PatrolAgent::readParams() {
 
     if (! ros::param::get("/goal_reached_wait", goal_reached_wait)) {
-      goal_reached_wait = 0.0;
-      ros::param::set("/goal_reached_wait", goal_reached_wait);
+        goal_reached_wait = 0.0;
+        ros::param::set("/goal_reached_wait", goal_reached_wait);
     }
 
     if (! ros::param::get("/communication_delay", communication_delay)) {
-      communication_delay = 0.0;
-      ros::param::set("/communication_delay", communication_delay);
-    } 
+        communication_delay = 0.0;
+        ros::param::set("/communication_delay", communication_delay);
+    }
 
     if (! ros::param::get("/lost_message_rate", lost_message_rate)) {
-      lost_message_rate = 0.0;
-      ros::param::set("/lost_message_rate", lost_message_rate);
+        lost_message_rate = 0.0;
+        ros::param::set("/lost_message_rate", lost_message_rate);
     }
 
 }
@@ -248,9 +250,9 @@ void PatrolAgent::run() {
     // Asynch spinner (non-blocking)
     ros::AsyncSpinner spinner(2); // Use n threads
     spinner.start();
-//     ros::waitForShutdown();
+    //     ros::waitForShutdown();
 
-    /* Run Algorithm */ 
+    /* Run Algorithm */
     
     ros::Rate loop_rate(30); //0.033 seconds or 30Hz
     
@@ -263,7 +265,7 @@ void PatrolAgent::run() {
         else { // goal not complete (active)
             if (interference) {
                 do_interference_behavior();
-            }       
+            }
             
             if (ResendGoal) {
                 //Send the goal to the robot (Global Map)
@@ -283,17 +285,17 @@ void PatrolAgent::run() {
             
             if (end_simulation) {
                 return;
-            }   
-        
+            }
+
         }
         
         //ros::Duration delay = ros::Duration(0.1);
         //delay.sleep();
         
-	// ros::spinOnce();           
-	loop_rate.sleep(); //David Portugal: I believe this is more correct to guarantee that the loop takes exactly 0.1 secs            
+        // ros::spinOnce();
+        loop_rate.sleep(); //David Portugal: I believe this is more correct to guarantee that the loop takes exactly 0.1 secs
 
-    } // while ros.ok    
+    } // while ros.ok
 }
 
 
@@ -302,7 +304,7 @@ void PatrolAgent::onGoalComplete()
     if(next_vertex>-1) {
         //Update Idleness Table:
         update_idleness();
-        current_vertex = next_vertex;       
+        current_vertex = next_vertex;
     }
     
     //devolver proximo vertex tendo em conta apenas as idlenesses;
@@ -315,17 +317,17 @@ void PatrolAgent::onGoalComplete()
 
     //Send the goal to the robot (Global Map)
     ROS_INFO("Sending goal - Vertex %d (%f,%f)\n", next_vertex, vertex_web[next_vertex].x, vertex_web[next_vertex].y);
-    //sendGoal(vertex_web[next_vertex].x, vertex_web[next_vertex].y);  
+    //sendGoal(vertex_web[next_vertex].x, vertex_web[next_vertex].y);
     sendGoal(next_vertex);  // send to move_base
     
-    goal_complete = false;    
+    goal_complete = false;
 }
 
 void PatrolAgent::onGoalNotComplete()
 {   
     int prev_vertex = next_vertex;
     
-    ROS_INFO("Goal not complete - Vertex %d\n", next_vertex);   
+    ROS_INFO("Goal not complete - Vertex %d\n", next_vertex);
     
     //devolver proximo vertex tendo em conta apenas as idlenesses;
     next_vertex = compute_next_vertex();
@@ -349,10 +351,10 @@ void PatrolAgent::onGoalNotComplete()
 
     //Send the goal to the robot (Global Map)
     ROS_INFO("Re-Sending NEW goal - Vertex %d (%f,%f)\n", next_vertex, vertex_web[next_vertex].x, vertex_web[next_vertex].y);
-    //sendGoal(vertex_web[next_vertex].x, vertex_web[next_vertex].y);  
+    //sendGoal(vertex_web[next_vertex].x, vertex_web[next_vertex].y);
     sendGoal(next_vertex);  // send to move_base
     
-    goal_complete = false;    
+    goal_complete = false;
 }
 
 
@@ -362,23 +364,23 @@ void PatrolAgent::processEvents() {
 
 void PatrolAgent::update_idleness() {
     double now = ros::Time::now().toSec();
-        
+
     for(size_t i=0; i<dimension; i++){
         if ((int)i == next_vertex){
-            last_visit[i] = now;    
+            last_visit[i] = now;
         }
-        instantaneous_idleness[i] = now - last_visit[i];           
-	
-	//Show Idleness Table:
-	//ROS_INFO("idleness[%u] = %f",i,instantaneous_idleness[i]);
+        instantaneous_idleness[i] = now - last_visit[i];
+
+        //Show Idleness Table:
+        //ROS_INFO("idleness[%u] = %f",i,instantaneous_idleness[i]);
     }
 }
 
 void PatrolAgent::initialize_node (){ //ID,msg_type,1
-  
-    ROS_INFO("Initialize Node: Robot %d",ID_ROBOT); 
+
+    ROS_INFO("Initialize Node: Robot %d",ID_ROBOT);
     
-    std_msgs::Int16MultiArray msg;   
+    std_msgs::Int16MultiArray msg;
     msg.data.clear();
     msg.data.push_back(ID_ROBOT);
     msg.data.push_back(INITIALIZE_MSG_TYPE);
@@ -390,9 +392,10 @@ void PatrolAgent::initialize_node (){ //ID,msg_type,1
     ros::Rate loop_rate(0.5); //meio segundo
     
     while (count<3){ //send activation msg 3times
-        results_pub.publish(msg);
+        //results_pub.publish(msg);
         //ROS_INFO("publiquei msg: %s\n", msg.data.c_str());
-        ros::spinOnce();
+        //ros::spinOnce();
+        do_send_message(msg);
         loop_rate.sleep();
         count++;
     }
@@ -428,7 +431,7 @@ void PatrolAgent::getRobotPose(int robotid, float &x, float &y, float &theta) {
 
 void PatrolAgent::odomCB(const nav_msgs::Odometry::ConstPtr& msg) { //colocar propria posicao na tabela
     
-//  printf("Colocar Propria posição na tabela, ID_ROBOT = %d\n",ID_ROBOT);
+    //  printf("Colocar Propria posição na tabela, ID_ROBOT = %d\n",ID_ROBOT);
     int idx = ID_ROBOT;
     
     if (ID_ROBOT<=-1){
@@ -441,7 +444,7 @@ void PatrolAgent::odomCB(const nav_msgs::Odometry::ConstPtr& msg) { //colocar pr
     xPos[idx]=x; // msg->pose.pose.position.x;
     yPos[idx]=y; // msg->pose.pose.position.y;
     
-//  printf("Posicao colocada em Pos[%d]\n",idx);
+    //  printf("Posicao colocada em Pos[%d]\n",idx);
 }
 
 
@@ -450,19 +453,19 @@ void PatrolAgent::sendGoal(int next_vertex)
 {
     goal_canceled_by_user = false;
     
-    double target_x = vertex_web[next_vertex].x, 
-           target_y = vertex_web[next_vertex].y;
+    double target_x = vertex_web[next_vertex].x,
+            target_y = vertex_web[next_vertex].y;
     
     //Define Goal:
     move_base_msgs::MoveBaseGoal goal;
     //Send the goal to the robot (Global Map)
-    geometry_msgs::Quaternion angle_quat = tf::createQuaternionMsgFromYaw(0.0);     
-    goal.target_pose.header.frame_id = "map"; 
-    goal.target_pose.header.stamp = ros::Time::now();    
+    geometry_msgs::Quaternion angle_quat = tf::createQuaternionMsgFromYaw(0.0);
+    goal.target_pose.header.frame_id = "map";
+    goal.target_pose.header.stamp = ros::Time::now();
     goal.target_pose.pose.position.x = target_x; // vertex_web[current_vertex].x;
-    goal.target_pose.pose.position.y = target_y; // vertex_web[current_vertex].y;  
+    goal.target_pose.pose.position.y = target_y; // vertex_web[current_vertex].y;
     goal.target_pose.pose.orientation = angle_quat; //alpha -> orientação  (queria optimizar este parametro -> através da direcção do vizinho!)
-    ac->sendGoal(goal, boost::bind(&PatrolAgent::goalDoneCallback, this, _1, _2), boost::bind(&PatrolAgent::goalActiveCallback,this), boost::bind(&PatrolAgent::goalFeedbackCallback, this,_1));  
+    ac->sendGoal(goal, boost::bind(&PatrolAgent::goalDoneCallback, this, _1, _2), boost::bind(&PatrolAgent::goalActiveCallback,this), boost::bind(&PatrolAgent::goalFeedbackCallback, this,_1));
 }
 
 void PatrolAgent::cancelGoal() 
@@ -473,14 +476,14 @@ void PatrolAgent::cancelGoal()
 
 
 void PatrolAgent::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result){ //goal terminado (completo ou cancelado)
-//  ROS_INFO("Goal is complete (suceeded, aborted or cancelled).");
+    //  ROS_INFO("Goal is complete (suceeded, aborted or cancelled).");
     // If the goal succeeded send a new one!
     //if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED) sendNewGoal = true;
     // If it was aborted time to back up!
-    //if(state.state_ == actionlib::SimpleClientGoalState::ABORTED) needToBackUp = true;    
+    //if(state.state_ == actionlib::SimpleClientGoalState::ABORTED) needToBackUp = true;
     
     if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED){
-	      ROS_INFO("Goal reached ... WAITING %.2f sec",goal_reached_wait);
+        ROS_INFO("Goal reached ... WAITING %.2f sec",goal_reached_wait);
         ros::Duration delay(goal_reached_wait); // wait after goal is reached
         delay.sleep();
         ROS_INFO("Goal reached ... DONE");
@@ -499,19 +502,19 @@ void PatrolAgent::goalDoneCallback(const actionlib::SimpleClientGoalState &state
 
 void PatrolAgent::goalActiveCallback(){  //enquanto o robot esta a andar para o goal...
     goal_complete = false;
-//      ROS_INFO("Goal is active.");
+    //      ROS_INFO("Goal is active.");
 }
 
 void PatrolAgent::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedbackConstPtr &feedback){    //publicar posições
 
     send_positions();
     
-    interference = check_interference(ID_ROBOT);    
+    interference = check_interference(ID_ROBOT);
 }
 
 void PatrolAgent::send_goal_reached() {
     // [ID,msg_type,vertex,intention,0]
-    std_msgs::Int16MultiArray msg;   
+    std_msgs::Int16MultiArray msg;
     msg.data.clear();
     msg.data.push_back(ID_ROBOT);
     msg.data.push_back(TARGET_REACHED_MSG_TYPE);
@@ -519,8 +522,9 @@ void PatrolAgent::send_goal_reached() {
     //msg.data.push_back(next_vertex);
     //msg.data.push_back(0); //David Portugal: is this necessary?
     
-    results_pub.publish(msg);   
-    ros::spinOnce();  
+    do_send_message(msg);
+    //results_pub.publish(msg);
+    //ros::spinOnce();
 }
 
 bool PatrolAgent::check_interference (int ID_ROBOT){ //verificar se os robots estao proximos
@@ -537,10 +541,10 @@ bool PatrolAgent::check_interference (int ID_ROBOT){ //verificar se os robots es
         dist_quad = (xPos[i] - xPos[ID_ROBOT])*(xPos[i] - xPos[ID_ROBOT]) + (yPos[i] - yPos[ID_ROBOT])*(yPos[i] - yPos[ID_ROBOT]);
         
         if (dist_quad <= /*sqrt*/4){    //robots are 2 meter or less apart
-//          ROS_INFO("Feedback: Robots are very close. INTERFERENCE! Dist_Quad = %f", dist_quad);
+            //          ROS_INFO("Feedback: Robots are very close. INTERFERENCE! Dist_Quad = %f", dist_quad);
             last_interference = ros::Time::now().toSec();
             return true;
-        }       
+        }
     }
     return false;
     
@@ -549,46 +553,46 @@ bool PatrolAgent::check_interference (int ID_ROBOT){ //verificar se os robots es
 void PatrolAgent::backup(){
     
     while (backUpCounter<=100){
-    
-    if(backUpCounter==0){
-        ROS_INFO("The wall is too close! I need to do some backing up...");
-        // Move the robot back...
-        geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x = -0.1;
-        cmd_vel.angular.z = 0.0;
-        cmd_vel_pub.publish(cmd_vel);
-    }
-            
-    if(backUpCounter==40){
-        // Turn the robot around...
-        geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x = 0.0;
-        cmd_vel.angular.z = 0.5;
-        cmd_vel_pub.publish(cmd_vel);
-    }
-            
-    if(backUpCounter==100){
-        // Stop the robot...
-        geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x = 0.0;
-        cmd_vel.angular.z = 0.0;
-        cmd_vel_pub.publish(cmd_vel);
-            
-        ROS_INFO("Done backing up, now on with my life!");      
-    }
 
-    backUpCounter++;
+        if(backUpCounter==0){
+            ROS_INFO("The wall is too close! I need to do some backing up...");
+            // Move the robot back...
+            geometry_msgs::Twist cmd_vel;
+            cmd_vel.linear.x = -0.1;
+            cmd_vel.angular.z = 0.0;
+            cmd_vel_pub.publish(cmd_vel);
+        }
+
+        if(backUpCounter==40){
+            // Turn the robot around...
+            geometry_msgs::Twist cmd_vel;
+            cmd_vel.linear.x = 0.0;
+            cmd_vel.angular.z = 0.5;
+            cmd_vel_pub.publish(cmd_vel);
+        }
+
+        if(backUpCounter==100){
+            // Stop the robot...
+            geometry_msgs::Twist cmd_vel;
+            cmd_vel.linear.x = 0.0;
+            cmd_vel.angular.z = 0.0;
+            cmd_vel_pub.publish(cmd_vel);
+            
+            ROS_INFO("Done backing up, now on with my life!");
+        }
+
+        backUpCounter++;
     }
     
 }
 
 void PatrolAgent::do_interference_behavior()
 {
-    ROS_INFO("Interference detected! Executing interference behavior...\n");   
+    ROS_INFO("Interference detected! Executing interference behavior...\n");
     send_interference();  // send interference to monitor for counting
     
 #if 1
-    // Stop the robot..         
+    // Stop the robot..
     cancelGoal();
     ROS_INFO("Robot stopped");
     ros::Duration delay(3); // seconds
@@ -596,8 +600,8 @@ void PatrolAgent::do_interference_behavior()
     ResendGoal = true;
 #else    
     //get own "odom" positions...
-    ros::spinOnce();        
-                
+    ros::spinOnce();
+
     //Waiting until conflict is solved...
     while(interference){
         interference = check_interference(ID_ROBOT);
@@ -618,11 +622,11 @@ void PatrolAgent::do_interference_behavior()
 void PatrolAgent::send_positions()
 {
     //Publish Position to common node:
-    nav_msgs::Odometry msg; 
-    
+    //nav_msgs::Odometry msg;
+    /*
     int idx = ID_ROBOT;
 
-    if (ID_ROBOT <= -1){
+     if (ID_ROBOT <= -1){
         msg.header.frame_id = "map";    //identificador do robot q publicou
         idx = 0;
     }else{
@@ -633,8 +637,23 @@ void PatrolAgent::send_positions()
 
     msg.pose.pose.position.x = xPos[idx]; //send odometry.x
     msg.pose.pose.position.y = yPos[idx]; //send odometry.y
-  
+
     positions_pub.publish(msg);
+    */
+    std_msgs::Int16MultiArray msg;
+    msg.data.clear();
+    msg.data.push_back(ID_ROBOT);
+    msg.data.push_back(POSITION_MSG_TYPE);
+    msg.data.push_back(xPos[ID_ROBOT]);
+    msg.data.push_back(yPos[ID_ROBOT]);
+    //msg.data.push_back(next_vertex);
+    //msg.data.push_back(0); //David Portugal: is this necessary?
+
+    do_send_message(msg);
+    //results_pub.publish(msg);
+    //ros::spinOnce();
+
+
     ros::spinOnce();
 }
 
@@ -643,21 +662,21 @@ void PatrolAgent::receive_positions()
 {
     
 }
-
+/*
 void PatrolAgent::positionsCB(const nav_msgs::Odometry::ConstPtr& msg) { //construir tabelas de posições
-        
-//     printf("Construir tabela de posicoes (receber posicoes), ID_ROBOT = %d\n",ID_ROBOT);    
-        
+
+    //     printf("Construir tabela de posicoes (receber posicoes), ID_ROBOT = %d\n",ID_ROBOT);
+
     char id[20]; //identificador do robot q enviou a msg d posição...
     strcpy( id, msg->header.frame_id.c_str() );
     //int stamp = msg->header.seq;
-//     printf("robot q mandou msg = %s\n", id);
+    //     printf("robot q mandou msg = %s\n", id);
     
     // Build Positions Table
     
     if (ID_ROBOT>-1){
-    //verify id "XX" of robot: (string: "robot_XX/map")
-    
+        //verify id "XX" of robot: (string: "robot_XX/map")
+
         char str_idx[4];
         uint i;
         
@@ -671,23 +690,23 @@ void PatrolAgent::positionsCB(const nav_msgs::Odometry::ConstPtr& msg) { //const
         }
         
         int idx = atoi (str_idx);
-    //  printf("id robot q mandou msg = %d\n",idx);
+        //  printf("id robot q mandou msg = %d\n",idx);
         
         if (idx >= TEAMSIZE && TEAMSIZE <= NUM_MAX_ROBOTS){
             //update teamsize:
             TEAMSIZE = idx+1;
         }
         
-        if (ID_ROBOT != idx){  //Ignore own positions   
+        if (ID_ROBOT != idx){  //Ignore own positions
             xPos[idx]=msg->pose.pose.position.x;
-            yPos[idx]=msg->pose.pose.position.y;        
-        }   
-//      printf ("Position Table:\n frame.id = %s\n id_robot = %d\n xPos[%d] = %f\n yPos[%d] = %f\n\n", id, idx, idx, xPos[idx], idx, yPos[idx] );       
+            yPos[idx]=msg->pose.pose.position.y;
+        }
+        //      printf ("Position Table:\n frame.id = %s\n id_robot = %d\n xPos[%d] = %f\n yPos[%d] = %f\n\n", id, idx, idx, xPos[idx], idx, yPos[idx] );
     }
     
     receive_positions();
 }
-
+*/
 
 void PatrolAgent::send_results() { 
 
@@ -695,16 +714,33 @@ void PatrolAgent::send_results() {
 
 // simulates blocking send operation with delay in communication
 void PatrolAgent::do_send_message(std_msgs::Int16MultiArray &msg) {
-	if (communication_delay>0.001) {
-    	//double current_time = ros::Time::now().toSec();
-    	//if (current_time-last_communication_delay_time>1.0) { 
-	        //ROS_INFO("Communication delay %.1f",communication_delay);
-	        ros::Duration delay(communication_delay); // seconds
-	        delay.sleep();
-	        //last_communication_delay_time = current_time;
+    if (communication_delay>0.001) {
+        //double current_time = ros::Time::now().toSec();
+        //if (current_time-last_communication_delay_time>1.0) {
+        //ROS_INFO("Communication delay %.1f",communication_delay);
+        ros::Duration delay(communication_delay); // seconds
+        delay.sleep();
+        //last_communication_delay_time = current_time;
         //}
-    }    
-    results_pub.publish(msg);
+    }
+    
+
+    
+    std::stringstream ss;
+
+    for (std::vector<signed short>::iterator it = msg.data.begin(); it != msg.data.end(); ++it) {
+        ss << *it <<" ";
+    }
+    std::string s = ss.str();
+
+    //results_pub.publish(msg);
+    tcp_interface::RCOMMessage m;
+    m.header.stamp = ros::Time::now();
+    m.robotreceiver="all";
+    std::stringstream robotname; robotname << "robot_" << ID_ROBOT;
+    m.robotsender=robotname.str();
+    m.value=s;
+    rcom_pub.publish(m);
     ros::spinOnce();
 }
 
@@ -716,76 +752,103 @@ void PatrolAgent::receive_results() {
 void PatrolAgent::send_interference(){
     //interference: [ID,msg_type]
 
-    printf("Send Interference: Robot %d\n",ID_ROBOT);   
+    printf("Send Interference: Robot %d\n",ID_ROBOT);
     
-    std_msgs::Int16MultiArray msg;   
+    std_msgs::Int16MultiArray msg;
     msg.data.clear();
     msg.data.push_back(ID_ROBOT);
     msg.data.push_back(INTERFERENCE_MSG_TYPE);
     
-    results_pub.publish(msg);   
-    ros::spinOnce();
+    do_send_message(msg);
+    //results_pub.publish(msg);
+    //ros::spinOnce();
 }
 
 
 
 
-void PatrolAgent::resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { 
+void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
     
-    std::vector<signed short>::const_iterator it = msg->data.begin();    
+    //std::vector<signed short>::const_iterator it = msg->data.begin();
     
     vresults.clear();
     
-    for (size_t k=0; k<msg->data.size(); k++) {
-        vresults.push_back(*it); it++;
-    } 
+    //for (size_t k=0; k<msg->data.size(); k++) {
+    //    vresults.push_back(*it); it++;
+    //}
+    
+    signed short buf;
+
+    string message;
+    message =msg->value;
+    stringstream ss(message); // Insert the string into a stream
+
+    //printf(" MESSAGE RECEIVED %s \n",message.c_str());
+    while (ss >> buf){
+        //tokens.push_back(buf);
+        vresults.push_back(buf);
+    }
+
+
 
     int id_sender = vresults[0];
     int msg_type = vresults[1];
     
     //printf(" MESSAGE FROM %d TYPE %d ...\n",id_sender, msg_type);
     
-    // messages coming from the monitor
-    if (id_sender==-1 && msg_type==INITIALIZE_MSG_TYPE) {
-        if (initialize==true && vresults[2]==100) {   //"-1,msg_type,100" (BEGINNING)
-            ROS_INFO("Let's Patrol!\n");
-            double r = 1.0 * ((rand() % 1000)/1000.0);
-            ros::Duration wait(r); // seconds
-            wait.sleep();
-            initialize = false;
+    if(id_sender!=ID_ROBOT && msg_type==POSITION_MSG_TYPE){
+        if (id_sender >= TEAMSIZE && TEAMSIZE < NUM_MAX_ROBOTS){
+            //update teamsize:
+            TEAMSIZE = id_sender+1;
         }
-        
-        if (initialize==false && vresults[2]==999) {   //"-1,msg_type,999" (END)
-            ROS_INFO("The simulation is over. Let's leave");
-            end_simulation = true;     
-        }
-    }
-    
-    if (!initialize) {
-#if 0
-        // communication delay
-        if ((communication_delay>0.001) && (id_sender!=ID_ROBOT)) {
-        	double current_time = ros::Time::now().toSec();
-        	if (current_time-last_communication_delay_time>1.0) { 
-		        ROS_INFO("Communication delay %.1f",communication_delay);
-		        ros::Duration delay(communication_delay); // seconds
-		        delay.sleep();
-		        last_communication_delay_time = current_time;
+        xPos[id_sender]=vresults[2];
+        yPos[id_sender]=vresults[3];
+
+        receive_positions();
+
+    }else{
+
+        // messages coming from the monitor
+        if (id_sender==-1 && msg_type==INITIALIZE_MSG_TYPE) {
+            if (initialize==true && vresults[2]==100) {   //"-1,msg_type,100" (BEGINNING)
+                ROS_INFO("Let's Patrol!\n");
+                double r = 1.0 * ((rand() % 1000)/1000.0);
+                ros::Duration wait(r); // seconds
+                wait.sleep();
+                initialize = false;
+            }
+
+            if (initialize==false && vresults[2]==999) {   //"-1,msg_type,999" (END)
+                ROS_INFO("The simulation is over. Let's leave");
+                end_simulation = true;
             }
         }
-        bool lost_message = false;
-        if ((lost_message_rate>0.0001)&& (id_sender!=ID_ROBOT)) {
-            double r = (rand() % 1000)/1000.0;
-            lost_message = r < lost_message_rate;
-        }
-        if (lost_message) {
-            ROS_INFO("Lost message");
-        }
-        else
-#endif
-            receive_results();
-    }
 
+        if (!initialize) {
+#if 0
+            // communication delay
+            if ((communication_delay>0.001) && (id_sender!=ID_ROBOT)) {
+                double current_time = ros::Time::now().toSec();
+                if (current_time-last_communication_delay_time>1.0) {
+                    ROS_INFO("Communication delay %.1f",communication_delay);
+                    ros::Duration delay(communication_delay); // seconds
+                    delay.sleep();
+                    last_communication_delay_time = current_time;
+                }
+            }
+            bool lost_message = false;
+            if ((lost_message_rate>0.0001)&& (id_sender!=ID_ROBOT)) {
+                double r = (rand() % 1000)/1000.0;
+                lost_message = r < lost_message_rate;
+            }
+            if (lost_message) {
+                ROS_INFO("Lost message");
+            }
+            else
+#endif
+                receive_results();
+        }
+    }
     ros::spinOnce();
-  
+
 }

@@ -45,7 +45,7 @@
 #include <tf/transform_listener.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Int16MultiArray.h>
-
+#include <tcp_interface/RCOMMessage.h>
 
 #include "getgraph.h"
 
@@ -99,10 +99,10 @@ protected:
     uint vertex_intention;
     int robot_intention;
 
-    ros::Subscriber odom_sub, positions_sub;
-    ros::Publisher positions_pub;
-    ros::Subscriber results_sub;
-    ros::Publisher results_pub;
+    ros::Subscriber odom_sub;//, positions_sub;
+    //ros::Publisher positions_pub;
+    ros::Subscriber results_sub,rcom_sub;
+    ros::Publisher results_pub,rcom_pub;
     ros::Publisher cmd_vel_pub;
 
     
@@ -156,7 +156,7 @@ public:
     void do_send_message(std_msgs::Int16MultiArray &msg);
     void send_interference();
     void positionsCB(const nav_msgs::Odometry::ConstPtr& msg);
-    void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg);
+    void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg);
     
     // Must be implemented by sub-classes
     virtual int compute_next_vertex() = 0;

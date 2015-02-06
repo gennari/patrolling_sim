@@ -25,7 +25,7 @@ void SSIPatrolAgent::onGoalComplete()
 		//update next vertex based on previous decision
 		next_vertex = next_next_vertex;
 		//update global idleness of next vertex to avoid conflicts
-		if (next_vertex>=0 && next_vertex< dimension){
+        if (next_vertex>=0 && next_vertex< (int)dimension){
             pthread_mutex_lock(&lock);
 			global_instantaneous_idleness[next_vertex] = 0.0;   
             pthread_mutex_unlock(&lock);
@@ -68,7 +68,7 @@ void SSIPatrolAgent::reset_selected_vertices(bool* sv){
 	for(size_t i=0; i<dimension; i++) {
 		sv[i] = false;
     }
-    if (current_vertex >= 0 && current_vertex < dimension){
+    if ((int)current_vertex >= 0 && current_vertex < dimension){
 		selected_vertices[current_vertex] = true; //do not consider next vertex as possible goal 
     } 	
 }
@@ -82,7 +82,7 @@ void SSIPatrolAgent::select_faraway_vertices(bool* sv, int cv){
       size_t neighbor = vertex_web[cv].id_neigh[i];
 	  sv[neighbor] = false; 	
 	}
-    if (current_vertex >= 0 && current_vertex < dimension){
+    if ((int)current_vertex >= 0 && current_vertex < dimension){
 		selected_vertices[current_vertex] = true; //do not consider next vertex as possible goal 
     } 	
 	//print farway vertices
@@ -239,7 +239,6 @@ size_t SSIPatrolAgent::compute_hops(int cv, int nv)
     uint elem_s_path;
     int *shortest_path = new int[dimension]; 
     int id_neigh;
-    
     dijkstra( cv, nv, shortest_path, elem_s_path, vertex_web, dimension); //structure with normal costs
     size_t hops = 0;
     
@@ -276,7 +275,7 @@ void SSIPatrolAgent::update_global_idleness()
         global_instantaneous_idleness[i] += (now-last_update_idl);  // update value    
     }
     
-	if (current_vertex>=0 && current_vertex<dimension){
+    if ((int)current_vertex>=0 && current_vertex<dimension){
 		global_instantaneous_idleness[current_vertex] = 0.0;
 	}
 	pthread_mutex_unlock(&lock);
@@ -384,7 +383,7 @@ double SSIPatrolAgent::compute_bid(int nv){
 		//printf("[while loop] pathcost from %d to %d : %.2f \n",ci,ni,path_cost);
 		ci=ni;
 	}
-	if (ci >= 0 && ci < dimension){
+    if (ci >= 0 && ci < (int)dimension){
 		printf("returning back from (last task) %d to (current vertex) %d (cost = %.2f) \n",ci,current_vertex,path_cost);
 		path_cost += compute_cost(ci,current_vertex);
 	}
@@ -415,7 +414,7 @@ void SSIPatrolAgent::wait(){
 
 
 int SSIPatrolAgent::compute_next_vertex() {
-	compute_next_vertex(current_vertex);
+    return compute_next_vertex(current_vertex);
 }
 
 // current_vertex (goal just reached)
@@ -430,7 +429,7 @@ int SSIPatrolAgent::compute_next_vertex(int cv) {
 	//consider only neighbouring vertices for next_vertex selection (i.e., set to false only neighbouring vertices)
 	//NOTE: if none of the neighbouring vertices is assigned to the agent all other vertices will be considered (see reset_selected_vertices() called in select_next_vertex(...))
 	//select_faraway_vertices(selected_vertices,cv);	
-    if (cv >= 0 && cv < dimension){
+    if (cv >= 0 && cv < (int)dimension){
 		selected_vertices[cv] = true; //do not consider current vertex as possible goal 
     } 	
  	

@@ -9,6 +9,7 @@
   <depend package="actionlib"/>
   <depend package="roscpp"/>
   <depend package="tf"/>
+  <depend package="tcp_interface"/>
   <!-- depend package="emergency_stop"/ -->
 
 </package>
