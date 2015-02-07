@@ -180,6 +180,8 @@ add_executable(monitor src/monitor.cpp src/getgraph.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(monitor ${catkin_LIBRARIES})
  
+add_dependencies(monitor tcp_interface_generate_messages_cpp)
+
 ## Declare a cpp executable 
 add_executable(idlHistogram src/idlHistogram.cpp)
 ## Specify libraries to link a library or executable target against
