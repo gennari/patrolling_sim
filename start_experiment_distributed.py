@@ -46,7 +46,7 @@ Terminal_list = ['gnome-terminal','xterm']
 
 Master_list=['true','false']
 
-NetworkIF_List=['lo','wlan0','eth0','vboxnet0']
+NetworkIF_List=['lo','wlan0','eth0','eth1','vboxnet0']
 
 initPoses = {}
 
