@@ -149,7 +149,7 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
     message =msg->value;
     stringstream ss(message); // Insert the string into a stream
     //vector<string> tokens; // Create vector to hold our words
-    printf(" MESSAGE RECEIVED %s \n",message.c_str());
+    //printf(" MESSAGE RECEIVED %s \n",message.c_str());
     while (ss >> buf){
         //tokens.push_back(buf);
          vresults.push_back(buf);
@@ -158,7 +158,7 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
 
     id_robot = vresults[0];
     int msg_type = vresults[1];
-       printf(" MESSAGE FROM %d TYPE %d ...\n",id_robot, msg_type);
+    //   printf(" MESSAGE FROM %d TYPE %d ...\n",id_robot, msg_type);
 /*
     int p1 = *it; //data[0]
     ++it;
@@ -476,7 +476,7 @@ bool check_dead_robots() {
       double delta = current_time - last_goal_reached[i];
       // printf("DEBUG dead robot: %d   %.1f - %.1f = %.1f\n",i,current_time,last_goal_reached[i],delta);
       if (delta>DEAD_ROBOT_TIME*0.75) {
-        printf("Robot %d: dead robot - delta = %.1f / %.1f \n",i,delta,DEAD_ROBOT_TIME);
+        printf("Robot %d: dead robot - delta = %.1f / %.1f \n",i,delta,(float)DEAD_ROBOT_TIME);
         system("play beep.wav");
       }
       if (delta>DEAD_ROBOT_TIME) {
