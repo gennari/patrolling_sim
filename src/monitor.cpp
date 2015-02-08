@@ -69,6 +69,8 @@ using namespace std;
 
 #include "message_types.h"
 
+#define MONITOR_TCP_NAME "monitor"
+
 using std::cout;
 using std::endl;
 
@@ -111,6 +113,8 @@ void getRobotPose(int robotid, float &x, float &y, float &theta) {
     y = transform.getOrigin().y();
     theta = tf::getYaw(transform.getRotation());
 }
+
+
 void do_send_message(std_msgs::Int16MultiArray &msg) {
     std::stringstream ss;
 
@@ -123,7 +127,7 @@ void do_send_message(std_msgs::Int16MultiArray &msg) {
     tcp_interface::RCOMMessage m;
     m.header.stamp = ros::Time::now();
     m.robotreceiver="all";
-    m.robotsender="monitor";
+    m.robotsender=MONITOR_TCP_NAME;
     m.value=s;
     results_pub.publish(m);
     ros::spinOnce();
@@ -132,9 +136,15 @@ void do_send_message(std_msgs::Int16MultiArray &msg) {
 void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
     //void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
 
+    // message not for me
+    if (msg->robotreceiver!=MONITOR_TCP_NAME)
+	return;
+
+	
     /*std::vector<signed short>::const_iterator it = msg->data.begin();
     
 
+    
     
     vresults.clear();
     
@@ -142,6 +152,8 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
         vresults.push_back(*it); it++;
     }
     */
+    
+    
     std::vector<int> vresults;
     signed short buf;
 
@@ -156,9 +168,14 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
     }
 
 
-    id_robot = vresults[0];
     int msg_type = vresults[1];
-    //   printf(" MESSAGE FROM %d TYPE %d ...\n",id_robot, msg_type);
+    
+/*    if (msg_type==TARGET_REACHED_MSG_TYPE)
+      printf("--> MESSAGE FROM %d to %s TYPE %d ...\n",id_robot, 
+	     msg->robotreceiver.c_str(),
+	     msg_type);
+*/
+
 /*
     int p1 = *it; //data[0]
     ++it;
@@ -172,7 +189,9 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
     switch(msg_type) {
         case INITIALIZE_MSG_TYPE:
         {
-        if (initialize && vresults[2]==1){ 
+  	    id_robot = vresults[0];
+
+	  if (initialize && vresults[2]==1){ 
             if (init_robots[id_robot] == false){ 	//receive init msg: "ID,msg_type,1"
                 printf("Robot [ID = %d] is Active!\n", id_robot);
                 init_robots[id_robot] = true;
@@ -203,6 +222,8 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
         
         case TARGET_REACHED_MSG_TYPE:
         {
+	    id_robot = vresults[0];
+
             //goal sent by a robot during the experiment [ID,msg_type,vertex,intention,0]
             if (initialize==false){ 
                 goal = vresults[2];
@@ -216,7 +237,9 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
          
         case INTERFERENCE_MSG_TYPE:
         {
-            //interference: [ID,msg_type]
+	    id_robot = vresults[0];
+
+	    //interference: [ID,msg_type]
             if (initialize==false){
                 ROS_INFO("Robot %d sent interference.\n", id_robot); 
                 interference = true;

@@ -522,6 +522,7 @@ void PatrolAgent::send_goal_reached() {
     msg.data.push_back(current_vertex);
     //msg.data.push_back(next_vertex);
     //msg.data.push_back(0); //David Portugal: is this necessary?
+    printf("Send goal reached message: %d %d\n",ID_ROBOT,current_vertex);
     
     do_send_message(msg);
     //results_pub.publish(msg);
@@ -781,7 +782,7 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
     signed short buf;
 
     string message;
-    message =msg->value;
+    message = msg->value;
     stringstream ss(message); // Insert the string into a stream
 
     //printf(" MESSAGE RECEIVED %s \n",message.c_str());
@@ -794,8 +795,17 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
 
     int id_sender = vresults[0];
     int msg_type = vresults[1];
+
+    std::stringstream robotname; robotname << "robot_" << ID_ROBOT;
     
-    //printf(" MESSAGE FROM %d TYPE %d ...\n",id_sender, msg_type);
+    if (msg->robotreceiver!=robotname.str() && msg->robotreceiver!="all")
+	return;
+    
+    //printf("--> MESSAGE FROM %d To %s/%s TYPE %d ...\n",id_sender, 
+    //   msg->robotreceiver.c_str(),robotname.str().c_str(), msg_type);
+
+    
+    
     
     if(id_sender!=ID_ROBOT && msg_type==POSITION_MSG_TYPE){
         if (id_sender >= TEAMSIZE && TEAMSIZE < NUM_MAX_ROBOTS){

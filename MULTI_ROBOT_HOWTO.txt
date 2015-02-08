@@ -1,0 +1,42 @@
+==========================================================
+       How to run the MRP agents on different robots
+==========================================================
+
+1. Prepare your robots so that they can navigate in the environment 
+with move_base. Configure the network so that they can communicate
+each other.
+
+*** TODO: check topic and frame names ***
+
+
+2. Copy the 'patrolling_sim' and 'tcp_interface' packages
+on all the robots.
+
+
+3. Configure the file tcp_interface/config/UDPpeers.cfg adding
+one line for each host IP in the team. 
+Leave the port numbers as 9100 9110 in all the lines.
+
+Example:
+
+192.168.56.1	9100	9110
+192.168.56.101	9100	9110
+192.168.56.102	9100	9110
+
+You can use the same file with all the IPs in all the machines.
+
+
+4. Start the script 'start_experiment_distributed.py' on all
+the robots.
+
+
+5. On each robot, select the map, the number of robots, the algorithm
+and other info in the launcher. Choose the proper network tcp_interface
+(e.g. wlan0) corresponding to the robot network.
+The only differences among the different robots should be these ones:
+* From-To: each robot has a unique identifier
+* Monitor: true only on one robot.
+
+*Note*: the monitor program is a centralized node that is used only to collect information about the robots and to compute the performance. It does not send any information to the robots (except for the start signal at the beginning), thus it is not a centralized component of the system.
+
+
