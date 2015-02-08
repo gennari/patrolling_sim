@@ -3,7 +3,7 @@
   <arg name="robotname" default="robot_0" />
   <arg name="robotid" default="0" />
   <arg name="mapname" default="grid" />
-  <arg name="network_interface" default="wlan0" />
+  <arg name="network_interface" default="lo" />
 
   <group ns="$(arg robotname)">    
      <!--tf_prefix is now DEPRECATED: Override all Frame params -->   

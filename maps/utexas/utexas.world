@@ -1,0 +1,20 @@
+include "../hokuyo.inc"
+include "../crobot.inc"
+include "../floorplan.inc"
+
+window( 
+  size [ 850 700 1] 	
+  rotate [ 0.000 0.000 ]
+  center [23.475 16.425]
+  scale 17 		
+  show_data 0 
+)
+
+# load an environment bitmap
+floorplan (
+  size [83.20 25.00 1]	# meters (pixels x resolution in .yaml)
+  pose [41.10 12.50 0 0] # coords of the middle point
+  bitmap "utexas.pgm"
+)
+
+include "robots.inc"
