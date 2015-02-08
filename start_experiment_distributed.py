@@ -44,7 +44,7 @@ LostMsgRate_list = ['0','0.1','0.2','0.3']
 
 Terminal_list = ['gnome-terminal','xterm']
 
-Master_list=['true','false']
+Monitor_list=['true','false']
 
 NetworkIF_List=['lo','wlan0','eth0','eth1','vboxnet0']
 
@@ -113,7 +113,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     print 'Communication delay ',COMMDELAY
     print 'Terminal ',TERM
     print 'Timeout ',TIMEOUT
-    print 'Master ', MASTER
+    print 'Monitor ', MASTER
     print 'Network Interface ', NETWORK_IF
     
     
@@ -339,10 +339,10 @@ class DIP(tk.Frame):
         self.term_ddm.set(lastterm)
         tk.OptionMenu(self, self.term_ddm, *self.term_list).grid(sticky=W, row=6, column=1, pady=4, padx=5)
         
-        lbl = Label(self, text="Master")
+        lbl = Label(self, text="Monitor")
         lbl.grid(sticky=W, row = 7, column= 0, pady=4, padx=5)
 
-        self.master_list = Master_list
+        self.master_list = Monitor_list
         self.master_ddm = StringVar(self)
         try:
             lastmaster=self.oldConfigs["master"]

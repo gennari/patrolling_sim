@@ -210,12 +210,13 @@ void PatrolAgent::ready() {
     }
     ROS_INFO("Connected with move_base action server");
     
-    initialize_node(); //dizer q está vivo
+    // initialize_node(); //dizer q está vivo
     
     ros::Rate loop_rate(1); //1 segundo
     
     /* Wait until all nodes are ready.. */
-    while(initialize){
+    while (initialize){
+        send_initialize_msg();
         ros::spinOnce();
         loop_rate.sleep();
     }
@@ -376,7 +377,7 @@ void PatrolAgent::update_idleness() {
     }
 }
 
-void PatrolAgent::initialize_node (){ //ID,msg_type,1
+void PatrolAgent::send_initialize_msg (){ //ID,msg_type,1
 
     ROS_INFO("Initialize Node: Robot %d",ID_ROBOT);
     
@@ -389,16 +390,16 @@ void PatrolAgent::initialize_node (){ //ID,msg_type,1
     int count = 0;
     
     //ATENÇÃO ao PUBLICADOR!
-    ros::Rate loop_rate(0.5); //meio segundo
+    ros::Rate loop_rate(1); //meio segundo
     
-    while (count<3){ //send activation msg 3times
+    //while (true){ //send activation msg forever
         //results_pub.publish(msg);
         //ROS_INFO("publiquei msg: %s\n", msg.data.c_str());
         //ros::spinOnce();
         do_send_message(msg);
         loop_rate.sleep();
         count++;
-    }
+    //}
 }
 
 void PatrolAgent::getRobotPose(int robotid, float &x, float &y, float &theta) {
