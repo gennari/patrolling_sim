@@ -161,7 +161,7 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
     message =msg->value;
     stringstream ss(message); // Insert the string into a stream
     //vector<string> tokens; // Create vector to hold our words
-   // printf(" MESSAGE RECEIVED %s, from: %s, to: %s \n",message.c_str(), msg->robotsender.c_str(), msg->robotreceiver.c_str());
+    printf(" MESSAGE RECEIVED %s, from: %s, to: %s \n",message.c_str(), msg->robotsender.c_str(), msg->robotreceiver.c_str());
     while (ss >> buf){
         //tokens.push_back(buf);
          vresults.push_back(buf);
@@ -272,7 +272,7 @@ void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: 
             break;
         }
     case POSITION_MSG_TYPE:
-    {
+    {  // the received position are expressed in mm
         break;
     }
     }

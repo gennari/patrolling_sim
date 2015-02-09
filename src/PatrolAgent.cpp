@@ -446,7 +446,7 @@ void PatrolAgent::odomCB(const nav_msgs::Odometry::ConstPtr& msg) { //colocar pr
     
     xPos[idx]=x; // msg->pose.pose.position.x;
     yPos[idx]=y; // msg->pose.pose.position.y;
-    
+    //printf(" POSITION RECEIVED x:%f y:%f \n",xPos[idx],yPos[idx]);
     //  printf("Posicao colocada em Pos[%d]\n",idx);
 }
 
@@ -645,19 +645,19 @@ void PatrolAgent::send_positions()
     positions_pub.publish(msg);
     */
     
-    if ((int(lastXpose)!=int(xPos[ID_ROBOT])) or (int(lastYpose)!=int(yPos[ID_ROBOT]))){
+        lastXpose=xPos[ID_ROBOT]*1000;
+		lastYpose=yPos[ID_ROBOT]*1000;
 		std_msgs::Int16MultiArray msg;
 		msg.data.clear();
 		msg.data.push_back(ID_ROBOT);
 		msg.data.push_back(POSITION_MSG_TYPE);
-		msg.data.push_back(xPos[ID_ROBOT]);
-		msg.data.push_back(yPos[ID_ROBOT]);
+		msg.data.push_back(lastXpose);
+		msg.data.push_back(lastYpose);
 		//msg.data.push_back(next_vertex);
 		//msg.data.push_back(0); //David Portugal: is this necessary?
-		lastXpose=xPos[ID_ROBOT];
-		lastYpose=yPos[ID_ROBOT];
+		//printf(" POSITION TO SEND x:%f y:%f \n",lastXpose,lastYpose);
 		do_send_message(msg);
-    }
+    
     //results_pub.publish(msg);
     //ros::spinOnce();
 
@@ -818,9 +818,10 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
             //update teamsize:
             TEAMSIZE = id_sender+1;
         }
-        xPos[id_sender]=vresults[2];
-        yPos[id_sender]=vresults[3];
-
+        //printf(" POSITION RECEIVED in MM FROM %d x:%d y:%d \n",id_sender,vresults[2],vresults[3]);
+        xPos[id_sender]=float(vresults[2])/1000;
+        yPos[id_sender]=float(vresults[3])/1000;
+        //printf(" POSITION RECEIVED FROM %d x:%f y:%f \n",id_sender,xPos[id_sender],yPos[id_sender]);
         receive_positions();
 
     }else{
