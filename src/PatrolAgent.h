@@ -65,7 +65,7 @@ protected:
 
     double xPos[NUM_MAX_ROBOTS]; //tabelas de posições (atençao ao index pro caso de 1 so robot)
     double yPos[NUM_MAX_ROBOTS]; //tabelas de posições (atençao ao index pro caso de 1 so robot)
-
+    double lastXpose,lastYpose;
     tf::TransformListener *listener;
 
     std::string graph_file, mapname;

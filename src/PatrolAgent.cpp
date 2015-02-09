@@ -105,6 +105,8 @@ void PatrolAgent::init(int argc, char** argv) {
     resend_goal_count = 0;
     communication_delay = 0.0;
     lost_message_rate = 0.0;
+    lastXpose=0;
+    lastYpose=0;
     /* Define Starting Vertex/Position (Launch File Parameters) */
 
     ros::init(argc, argv, "patrol_agent");  // will be replaced by __name:=XXXXXX
@@ -642,16 +644,20 @@ void PatrolAgent::send_positions()
 
     positions_pub.publish(msg);
     */
-    std_msgs::Int16MultiArray msg;
-    msg.data.clear();
-    msg.data.push_back(ID_ROBOT);
-    msg.data.push_back(POSITION_MSG_TYPE);
-    msg.data.push_back(xPos[ID_ROBOT]);
-    msg.data.push_back(yPos[ID_ROBOT]);
-    //msg.data.push_back(next_vertex);
-    //msg.data.push_back(0); //David Portugal: is this necessary?
-
-    do_send_message(msg);
+    
+    if ((int(lastXpose)!=int(xPos[ID_ROBOT])) or (int(lastYpose)!=int(yPos[ID_ROBOT]))){
+		std_msgs::Int16MultiArray msg;
+		msg.data.clear();
+		msg.data.push_back(ID_ROBOT);
+		msg.data.push_back(POSITION_MSG_TYPE);
+		msg.data.push_back(xPos[ID_ROBOT]);
+		msg.data.push_back(yPos[ID_ROBOT]);
+		//msg.data.push_back(next_vertex);
+		//msg.data.push_back(0); //David Portugal: is this necessary?
+		lastXpose=xPos[ID_ROBOT];
+		lastYpose=yPos[ID_ROBOT];
+		do_send_message(msg);
+    }
     //results_pub.publish(msg);
     //ros::spinOnce();
 
@@ -798,7 +804,7 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
 
     std::stringstream robotname; robotname << "robot_" << ID_ROBOT;
     
-    if (msg->robotreceiver!=robotname.str() && msg->robotreceiver!="all")
+    if (msg->robotreceiver!=robotname.str()) //&& msg->robotreceiver!="all")
 	return;
     
     //printf("--> MESSAGE FROM %d To %s/%s TYPE %d ...\n",id_sender, 

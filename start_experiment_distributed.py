@@ -147,7 +147,8 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
           os.system('xterm -e "'+cmd_monitor+'" &') 
           os.system('xterm -e "'+cmd_monitor_tcp+'" &')
         else:
-          os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor+'\'" &')
+          os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor+'\'" --tab -e  "bash -c \''+cmd_monitor_tcp+'\'" &')
+          #os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor_tcp+'\'" &')
    
     
     cmd_stage = 'roslaunch patrolling_sim map.launch map:='+MAP
@@ -182,7 +183,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     if (TERM == 'gnome-terminal'):
 	#print gcmd
 	os.system(gcmd)
-    os.system('sleep 20')    
+    os.system('sleep 10')    
         
     # Start patrol behaviors
     gcmd = 'gnome-terminal '
