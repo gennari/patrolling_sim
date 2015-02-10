@@ -101,7 +101,10 @@ void DTAGreedy_Agent::init(int argc, char** argv) {
 
     ros::param::set("/algorithm_params",paramss.str());
 
-    getRobotPose(ID_ROBOT,origin_x, origin_y, origin_theta);
+    //getRobotPose(ID_ROBOT,origin_x, origin_y, origin_theta);
+    origin_x=xPos[ID_ROBOT];
+    origin_y=yPos[ID_ROBOT];
+    origin_theta=thetaPos[ID_ROBOT];
     ROS_INFO("Robot %d: Initial pose %.1f %.1f %.1f",ID_ROBOT,origin_x, origin_y, origin_theta);
     
 }

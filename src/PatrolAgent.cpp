@@ -46,6 +46,7 @@
 
 
 
+
 #include "PatrolAgent.h"
 
 using namespace std;
@@ -56,6 +57,7 @@ void PatrolAgent::init(int argc, char** argv) {
             argv[1]=__name:=XXXXXX
             argv[2]=grid
             argv[3]=ID_ROBOT
+            argv[4]=robotname
         */
     
     srand ( time(NULL) );
@@ -68,7 +70,7 @@ void PatrolAgent::init(int argc, char** argv) {
         ID_ROBOT = atoi(argv[3]);
         //printf("ID_ROBOT = %d\n",ID_ROBOT); //-1 in the case there is only 1 robot.
     }
-
+    robotname =string(argv[4]);
     mapname = string(argv[2]);
     graph_file = "maps/"+mapname+"/"+mapname+".graph";
     
@@ -160,12 +162,12 @@ void PatrolAgent::init(int argc, char** argv) {
     char string2[40];
     
     if(ID_ROBOT==-1){
-        strcpy (string1,"odom"); //string = "odom"
+        strcpy (string1,"amcl_pose"); //string = "odom"
         strcpy (string2,"cmd_vel"); //string = "cmd_vel"
         TEAMSIZE = 1;
     }else{
-        sprintf(string1,"robot_%d/odom",ID_ROBOT);
-        sprintf(string2,"robot_%d/cmd_vel",ID_ROBOT);
+        sprintf(string1,"%s/amcl_pose",robotname.c_str());
+        sprintf(string2,"%s/cmd_vel",robotname.c_str());
         TEAMSIZE = ID_ROBOT + 1;
     }
 
@@ -176,7 +178,8 @@ void PatrolAgent::init(int argc, char** argv) {
     cmd_vel_pub  = nh.advertise<geometry_msgs::Twist>(string2, 1);
     
     //Subscrever para obter dados de "odom" do robot corrente
-    odom_sub = nh.subscribe<nav_msgs::Odometry>(string1, 1, boost::bind(&PatrolAgent::odomCB, this, _1)); //size of the buffer = 1 (?)
+  //  odom_sub = nh.subscribe<nav_msgs::Odometry>(string1, 1, boost::bind(&PatrolAgent::odomCB, this, _1)); //size of the buffer = 1 (?)
+    pose_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>(string1, 1, boost::bind(&PatrolAgent::poseCB, this, _1)); //size of the buffer = 1 (?)
     
     ros::spinOnce();
     
@@ -200,7 +203,7 @@ void PatrolAgent::ready() {
     if(ID_ROBOT==-1){
         strcpy (string1,"move_base"); //string = "move_base
     }else{
-        sprintf(string1,"robot_%d/move_base",ID_ROBOT);
+        sprintf(string1,"%s/move_base",robotname.c_str());
     }
     
     //printf("string = %s\n",string);
@@ -403,7 +406,7 @@ void PatrolAgent::send_initialize_msg (){ //ID,msg_type,1
         count++;
     //}
 }
-
+/*
 void PatrolAgent::getRobotPose(int robotid, float &x, float &y, float &theta) {
     
     if (listener==NULL) {
@@ -411,8 +414,8 @@ void PatrolAgent::getRobotPose(int robotid, float &x, float &y, float &theta) {
         return;
     }
     
-    std::stringstream ss; ss << "robot_" << robotid;
-    std::string robotname = ss.str();
+    //std::stringstream ss; ss << "robot_" << robotid;
+    //std::string robotname = ss.str();
     std::string sframe = "/map";                //Patch David Portugal: Remember that the global map frame is "/map"
     std::string dframe = "/" + robotname + "/base_link";
     tf::StampedTransform transform;
@@ -431,7 +434,8 @@ void PatrolAgent::getRobotPose(int robotid, float &x, float &y, float &theta) {
     theta = tf::getYaw(transform.getRotation());
     // printf("Robot %d pose : %.1f %.1f \n",robotid,x,y);
 }
-
+*/
+/*
 void PatrolAgent::odomCB(const nav_msgs::Odometry::ConstPtr& msg) { //colocar propria posicao na tabela
     
     //  printf("Colocar Propria posição na tabela, ID_ROBOT = %d\n",ID_ROBOT);
@@ -448,8 +452,25 @@ void PatrolAgent::odomCB(const nav_msgs::Odometry::ConstPtr& msg) { //colocar pr
     yPos[idx]=y; // msg->pose.pose.position.y;
     //printf(" POSITION RECEIVED x:%f y:%f \n",xPos[idx],yPos[idx]);
     //  printf("Posicao colocada em Pos[%d]\n",idx);
-}
+}*/
+void PatrolAgent::poseCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) { //colocar propria posicao na tabela
 
+    //  printf("Colocar Propria posição na tabela, ID_ROBOT = %d\n",ID_ROBOT);
+    int idx = ID_ROBOT;
+
+    if (ID_ROBOT<=-1){
+        idx = 0;
+    }
+
+    //float x,y,th;
+    //getRobotPose(idx,x,y,th);
+
+    xPos[idx]=msg->pose.pose.position.x;
+    yPos[idx]=msg->pose.pose.position.y;
+    thetaPos[idx]=tf::getYaw(msg->pose.pose.orientation);
+    //printf(" POSITION RECEIVED x:%f y:%f \n",xPos[idx],yPos[idx]);
+    //  printf("Posicao colocada em Pos[%d]\n",idx);
+}
 
 
 void PatrolAgent::sendGoal(int next_vertex) 
@@ -645,8 +666,8 @@ void PatrolAgent::send_positions()
     positions_pub.publish(msg);
     */
     
-        lastXpose=xPos[ID_ROBOT]*1000;
-		lastYpose=yPos[ID_ROBOT]*1000;
+        lastXpose=xPos[ID_ROBOT]*100;
+        lastYpose=yPos[ID_ROBOT]*100;
 		std_msgs::Int16MultiArray msg;
 		msg.data.clear();
 		msg.data.push_back(ID_ROBOT);
@@ -745,8 +766,7 @@ void PatrolAgent::do_send_message(std_msgs::Int16MultiArray &msg) {
     tcp_interface::RCOMMessage m;
     m.header.stamp = ros::Time::now();
     m.robotreceiver="all";
-    std::stringstream robotname; robotname << "robot_" << ID_ROBOT;
-    m.robotsender=robotname.str();
+    m.robotsender=robotname;
     m.value=s;
     rcom_pub.publish(m);
     ros::spinOnce();
@@ -802,9 +822,8 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
     int id_sender = vresults[0];
     int msg_type = vresults[1];
 
-    std::stringstream robotname; robotname << "robot_" << ID_ROBOT;
-    
-    if (msg->robotreceiver!=robotname.str()) //&& msg->robotreceiver!="all")
+
+    if (msg->robotreceiver!=robotname) //&& msg->robotreceiver!="all")
 	return;
     
     //printf("--> MESSAGE FROM %d To %s/%s TYPE %d ...\n",id_sender, 
@@ -819,8 +838,8 @@ void PatrolAgent::resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) {
             TEAMSIZE = id_sender+1;
         }
         //printf(" POSITION RECEIVED in MM FROM %d x:%d y:%d \n",id_sender,vresults[2],vresults[3]);
-        xPos[id_sender]=float(vresults[2])/1000;
-        yPos[id_sender]=float(vresults[3])/1000;
+        xPos[id_sender]=float(vresults[2])/100;
+        yPos[id_sender]=float(vresults[3])/100;
         //printf(" POSITION RECEIVED FROM %d x:%f y:%f \n",id_sender,xPos[id_sender],yPos[id_sender]);
         receive_positions();
 

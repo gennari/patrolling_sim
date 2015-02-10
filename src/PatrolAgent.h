@@ -46,6 +46,7 @@
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Int16MultiArray.h>
 #include <tcp_interface/RCOMMessage.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 #include "getgraph.h"
 
@@ -65,10 +66,11 @@ protected:
 
     double xPos[NUM_MAX_ROBOTS]; //tabelas de posições (atençao ao index pro caso de 1 so robot)
     double yPos[NUM_MAX_ROBOTS]; //tabelas de posições (atençao ao index pro caso de 1 so robot)
+    double thetaPos[NUM_MAX_ROBOTS];
     double lastXpose,lastYpose;
     tf::TransformListener *listener;
 
-    std::string graph_file, mapname;
+    std::string graph_file, mapname, robotname;
     uint dimension; // Graph Dimension
     uint current_vertex; // current vertex
     bool ResendGoal; // Send the same goal again (if goal failed...)
@@ -99,7 +101,7 @@ protected:
     uint vertex_intention;
     int robot_intention;
 
-    ros::Subscriber odom_sub;//, positions_sub;
+    ros::Subscriber pose_sub;//, positions_sub;
     //ros::Publisher positions_pub;
     ros::Subscriber results_sub,rcom_sub;
     ros::Publisher results_pub,rcom_pub;
@@ -126,8 +128,9 @@ public:
     
     virtual void run();
     
-    void getRobotPose(int robotid, float &x, float &y, float &theta);
-    void odomCB(const nav_msgs::Odometry::ConstPtr& msg);
+   // void getRobotPose(int robotid, float &x, float &y, float &theta);
+    //void odomCB(const nav_msgs::Odometry::ConstPtr& msg);
+    void poseCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
     
     void sendGoal(int next_vertex);
     void cancelGoal();

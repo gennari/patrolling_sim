@@ -93,7 +93,7 @@ int id_robot; // robot sending the message
 int goal;
 double time_zero, last_report_time;
 double comm_delay;
-
+/*
 tf::TransformListener *listener;
 
 void getRobotPose(int robotid, float &x, float &y, float &theta) {
@@ -113,7 +113,7 @@ void getRobotPose(int robotid, float &x, float &y, float &theta) {
     y = transform.getOrigin().y();
     theta = tf::getYaw(transform.getRotation());
 }
-
+*/
 
 void do_send_message(std_msgs::Int16MultiArray &msg) {
     std::stringstream ss;
@@ -649,7 +649,7 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
     results_pub = nh.advertise<tcp_interface::RCOMMessage>("/RCOMMessage", 100);
     //results_pub = nh.advertise<std_msgs::Int16MultiArray>("results", 100);
 	
-  listener = new tf::TransformListener();
+  //listener = new tf::TransformListener();
     
  	ros::Rate loop_rate(30); //0.033 seconds or 30Hz
 	

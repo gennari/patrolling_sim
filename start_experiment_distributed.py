@@ -197,10 +197,10 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
             now = datetime.datetime.now()
             dateString = now.strftime("%Y-%m-%d-%H:%M")
             #cmd = 'bash -c \'rosrun patrolling_sim '+ALG+' __name:=patrol_robot'+str(i)+' '+MAP+' '+str(i)+' > logs/'+ALG+'-'+dateString+'-robot'+str(i)+'.log \''
-            cmd = 'bash -c \'rosrun patrolling_sim '+ALG+' __name:=patrol_robot'+str(i)+' '+MAP+' '+str(i)+'\''
+            cmd = 'bash -c \'rosrun patrolling_sim '+ALG+' __name:=patrol_robot'+str(i)+' '+MAP+' '+str(i)+' robot_'+str(i) +'\''
         print cmd
         if (TERM == 'xterm'):
-	  os.system('xterm -e  "'+cmd+'" &')
+	  os.system('xterm -hold -e  "'+cmd+'" &')
 	  os.system('sleep 1')
         gcmd = gcmd + ' --tab -e "'+cmd+'" '
     gcmd = gcmd + '&'
