@@ -186,13 +186,16 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
       if (TERM == 'gnome-terminal'):
 	  #print gcmd
 	  os.system(gcmd)
-      os.system('sleep 10')    
+         
     elif (ROBOT=='turtlebot'):
       cmd = 'bash -c \'roslaunch patrolling_sim turtlebot.launch robotname:=robot_'+str(FROM)+' robotid:='+str(FROM)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
       if (TERM == 'xterm'):
          os.system('xterm -e  "'+cmd+'" &')
       else:
          os.system('gnome-terminal --tab -e  "'+cmd+'" &')
+    
+
+    os.system('sleep 10') 
     # Start patrol behaviors
     gcmd = 'gnome-terminal '
     for i in range(int(FROM),int(TO)+1):
