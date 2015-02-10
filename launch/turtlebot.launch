@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+  <arg name="robotname" default="robot_0" />
+  <arg name="robotid" default="0" />
+  <arg name="mapname" default="grid" />
+  <arg name="network_interface" default="lo" />
+
+
+   <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find patrolling_sim)/maps/$(arg mapname)/$(arg mapname).yaml" />
+  
+  
+  <include file="$(find turtlebot_setup)/launch/navigation.launch" >
+	  <arg name="robot_name"  value="$(arg robotname)"/>
+	</include>
+  
+  <group ns="$(arg robotname)">    
+     <!--tf_prefix is now DEPRECATED: Override all Frame params -->   
+    <!--<param name="tf_prefix" value="$(arg robotname)" />--> 
+    <include file="$(find patrolling_sim)/params/amcl/$(arg robotname)_initial_pose.xml" />
+       
+    <node pkg="tcp_interface" type="tcp_interface" name="tcp" output="screen">
+	  <param name="TCP_server_port" value="900$(arg robotid)"/>
+      <param name="UDP_server_port" value="910$(arg robotid)"/>
+      <param name="network_interface" value="$(arg network_interface)"/>
+      <param name="UDP_team_min_port" value="9100"/>
+      <param name="UDP_team_max_port" value="9115"/>
+      <param name="config_file" value="$(find tcp_interface)/config/UDPpeers.cfg"/>
+      <param name="robot_name" value="$(arg robotname)"/>
+    </node>
+
+  </group>
+</launch>
