@@ -46,7 +46,9 @@ Terminal_list = ['gnome-terminal','xterm']
 
 Monitor_list=['true','false']
 
-NetworkIF_List=['lo','wlan0','eth0','eth1','vboxnet0']
+NetworkIF_list=['lo','wlan0','eth0','eth1','vboxnet0']
+
+Robot_list=['virtual','turtlebot']
 
 initPoses = {}
 
@@ -99,7 +101,7 @@ def getSimulationRunning():
 # Run the experiment with the given arguments
 # Terminates if simulation is stopped (/simulation_runnning param is false)
 # or if timeout is reached (if this is >0)
-def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TIMEOUT, MASTER, FROM, TO, NETWORK_IF ):
+def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TIMEOUT, MASTER, FROM, TO, NETWORK_IF, ROBOT ):
 
     ALG = findAlgName(ALG_SHORT)
     print 'Run the experiment'
@@ -115,6 +117,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     print 'Timeout ',TIMEOUT
     print 'Monitor ', MASTER
     print 'Network Interface ', NETWORK_IF
+    print 'Type of robot ', ROBOT
     
     
     loadInitPoses()
@@ -150,41 +153,46 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
           os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor+'\'" --tab -e  "bash -c \''+cmd_monitor_tcp+'\'" &')
           #os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor_tcp+'\'" &')
    
+    if(ROBOT=='virtual'):
+      cmd_stage = 'roslaunch patrolling_sim map.launch map:='+MAP
     
-    cmd_stage = 'roslaunch patrolling_sim map.launch map:='+MAP
+      if (os.getenv('ROS_DISTRO')=='groovy'):
+        cmd_stage = cmd_stage + " stage_pkg:=stage"
     
-    if (os.getenv('ROS_DISTRO')=='groovy'):
-      cmd_stage = cmd_stage + " stage_pkg:=stage"
+      print cmd_stage
+      if (TERM == 'xterm'):
+          os.system('xterm -e  "'+cmd_stage+'" &')
+      else:
+          os.system('gnome-terminal --tab -e "bash -c \''+cmd_stage+'\'" &')
     
-    print cmd_stage
-    if (TERM == 'xterm'):
-        os.system('xterm -e  "'+cmd_stage+'" &')
-    else:
-        os.system('gnome-terminal --tab -e "bash -c \''+cmd_stage+'\'" &')
+      os.system('sleep 3')
     
-    os.system('sleep 3')
-    
-     # Start robots
-    if (LOC_MODE == 'odom'):
+       # Start robots
+      if (LOC_MODE == 'odom'):
         robot_launch = 'robot.launch'
-    else:
+      else:
         robot_launch = 'robot_fake_loc.launch'
     
-    gcmd = 'gnome-terminal '
-    for i in range(int(FROM),int(TO)+1):
-        print 'Run robot ',i
-        cmd = 'bash -c \'roslaunch patrolling_sim '+robot_launch+' robotname:=robot_'+str(i)+' robotid:='+str(i)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
-        print cmd
-        if (TERM == 'xterm'):
-	  os.system('xterm -e  "'+cmd+'" &')
-	  os.system('sleep 1')
-        gcmd = gcmd + ' --tab -e "'+cmd+'" '
-    gcmd = gcmd + '&'
-    if (TERM == 'gnome-terminal'):
-	#print gcmd
-	os.system(gcmd)
-    os.system('sleep 10')    
-        
+      gcmd = 'gnome-terminal '
+      for i in range(int(FROM),int(TO)+1):
+          print 'Run robot ',i
+          cmd = 'bash -c \'roslaunch patrolling_sim '+robot_launch+' robotname:=robot_'+str(i)+' robotid:='+str(i)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
+          print cmd
+          if (TERM == 'xterm'):
+	        os.system('xterm -e  "'+cmd+'" &')
+	        os.system('sleep 1')
+          gcmd = gcmd + ' --tab -e "'+cmd+'" '
+      gcmd = gcmd + '&'
+      if (TERM == 'gnome-terminal'):
+	  #print gcmd
+	  os.system(gcmd)
+      os.system('sleep 10')    
+    elif (ROBOT=='turtlebot'):
+      cmd = 'bash -c \'roslaunch patrolling_sim turtlebot.launch robotname:=robot_'+str(FROM)+' robotid:='+str(FROM)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
+      if (TERM == 'xterm'):
+         os.system('xterm -e  "'+cmd+'" &')
+      else:
+         os.system('gnome-terminal --tab -e  "'+cmd+'" &')
     # Start patrol behaviors
     gcmd = 'gnome-terminal '
     for i in range(int(FROM),int(TO)+1):
@@ -353,10 +361,10 @@ class DIP(tk.Frame):
         tk.OptionMenu(self, self.master_ddm, *self.master_list).grid(sticky=W, row=7, column=1, pady=4, padx=5)
 
   
-	lbl = Label(self, text="Network IF")
+        lbl = Label(self, text="Network IF")
         lbl.grid(sticky=W, row = 8, column= 0, pady=4, padx=5)
         
-        self.networkif_list = NetworkIF_List
+        self.networkif_list = NetworkIF_list
         self.networkif_ddm = StringVar(self)
         try:
             lastnetworkif=self.oldConfigs["networkif"]
@@ -365,6 +373,18 @@ class DIP(tk.Frame):
         self.networkif_ddm.set(lastnetworkif)
         tk.OptionMenu(self, self.networkif_ddm, *self.networkif_list).grid(sticky=W, row=8, column=1, pady=4, padx=5)
   
+        lbl = Label(self, text="Robot")
+        lbl.grid(sticky=W, row = 9, column= 0, pady=4, padx=5)
+
+        self.robot_list = Robot_list
+        self.robot_ddm = StringVar(self)
+        try:
+            lastrobot=self.oldConfigs["robot"]
+        except:
+            lastrobot=self.robot_list[0]
+        self.robot_ddm.set(lastrobot)
+        tk.OptionMenu(self, self.robot_ddm, *self.robot_list).grid(sticky=W, row=9, column=1, pady=4, padx=5)
+
 
         launchButton = Button(self, text="Start Experiment",command=self.launch_script)
         launchButton.grid(sticky=W, row=10, column=0, pady=4, padx=5)
@@ -375,7 +395,7 @@ class DIP(tk.Frame):
     
     def launch_script(self):
         self.saveConfigFile();
-        thread.start_new_thread( run_experiment, (self.map_ddm.get(), self.robots_ddm.get(), self.alg_ddm.get(),self.locmode_ddm.get(),self.gwait_ddm.get(), COMMDELAY_DEFAULT, self.term_ddm.get(),0,self.master_ddm.get(),self.from_ddm.get(),self.to_ddm.get(),self.networkif_ddm.get()) )
+        thread.start_new_thread( run_experiment, (self.map_ddm.get(), self.robots_ddm.get(), self.alg_ddm.get(),self.locmode_ddm.get(),self.gwait_ddm.get(), COMMDELAY_DEFAULT, self.term_ddm.get(),0,self.master_ddm.get(),self.from_ddm.get(),self.to_ddm.get(),self.networkif_ddm.get(), self.robot_ddm.get()) )
 
     
     def quit(self):
@@ -398,6 +418,7 @@ class DIP(tk.Frame):
       f.write("term: %s\n"%self.term_ddm.get())
       f.write("master: %s\n"%self.master_ddm.get())
       f.write("networkif: %s\n"%self.networkif_ddm.get())
+      f.write("robot: %s\n"%self.robot_ddm.get())
       f.close()
 
 
@@ -420,7 +441,7 @@ def main():
   if (len(sys.argv)==1):
     root = tk.Tk()
     DIP(root)
-    root.geometry("350x400+0+0")
+    root.geometry("350x450+0+0")
     root.mainloop()  
   elif (len(sys.argv)==13):
     MAP = sys.argv[1]
@@ -435,11 +456,12 @@ def main():
     FROM = sys.argv[10]
     TO = sys.argv[11]
     NETWORK_IF = sys.argv[12]
+    ROBOT = sys.argv[13]
     
-    run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TIMEOUT, MASTER, FROM, TO, NETWORK_IF)
+    run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TIMEOUT, MASTER, FROM, TO, NETWORK_IF,ROBOT)
   else:
     print "Use: ",sys.argv[0]
-    print " or  ",sys.argv[0],' <map> <n.robots> <alg_short> <loc_mode> <goal-wait>  <communication-delay> <terminal> <timeout> <master> <from> <to> <network if> '
+    print " or  ",sys.argv[0],' <map> <n.robots> <alg_short> <loc_mode> <goal-wait>  <communication-delay> <terminal> <timeout> <master> <from> <to> <network if> <type of robot>'
   
 
 
