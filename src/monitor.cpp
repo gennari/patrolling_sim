@@ -135,11 +135,11 @@ void do_send_message(std_msgs::Int16MultiArray &msg) {
 
 void resultsCB(const tcp_interface::RCOMMessage::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
     //void resultsCB(const std_msgs::Int16MultiArray::ConstPtr& msg) { // msg array: [ID,vertex,intention,interference]
-
+    //cout << "1- receiver:"<< msg->robotreceiver << "robotname:"<< MONITOR_TCP_NAME << endl;
     // message not for me
     if (msg->robotreceiver!=MONITOR_TCP_NAME)
 	return;
-
+   //cout << "2- receiver:"<< msg->robotreceiver << "robotname:"<< MONITOR_TCP_NAME << endl;
 	
     /*std::vector<signed short>::const_iterator it = msg->data.begin();
     
@@ -577,10 +577,6 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
 		last_visit[i] = 0.0;
 	}
 	
-	for (i=0; i<NUM_MAX_ROBOTS; i++){
-		init_robots[i] = false;
-        last_goal_reached[i] = 0.0;
-	}
 
 	bool dead = false; // check if there is a dead robot
     
@@ -640,7 +636,11 @@ int main(int argc, char** argv){	//pass TEAMSIZE GRAPH ALGORITHM
 	//Wait for all robots to connect! (Exchange msgs)
 	ros::init(argc, argv, "monitor");
 	ros::NodeHandle nh;
-	
+    for (i=0; i<NUM_MAX_ROBOTS; i++){
+        init_robots[i] = false;
+        last_goal_reached[i] = ros::Time::now().toSec();
+    }
+
 	//Subscrever "results" vindo dos robots
     results_sub = nh.subscribe("RCOMMessage", 100, resultsCB);
     //results_sub = nh.subscribe("results", 100, resultsCB);

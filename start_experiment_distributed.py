@@ -131,7 +131,10 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
     else:
         os.system('gnome-terminal -e "bash -c \'roscore\'" &')
     os.system('sleep 3')
-    os.system('rosparam set /use_sim_time true')
+    if(ROBOT=='virtual'):
+      os.system('rosparam set /use_sim_time true')
+    else:
+      os.system('rosparam set /use_sim_time false')
     os.system("rosparam set /goal_reached_wait "+GWAIT)
     os.system("rosparam set /communication_delay "+str(COMMDELAY))
 #    os.system("rosparam set /lost_message_rate "+LOSTMSGRATE)
@@ -147,7 +150,7 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
         print cmd_monitor
         print cmd_monitor_tcp
         if (TERM == 'xterm'):
-          os.system('xterm -e "'+cmd_monitor+'" &') 
+          os.system('xterm -hold -e "'+cmd_monitor+'" &') 
           os.system('xterm -e "'+cmd_monitor_tcp+'" &')
         else:
           os.system('gnome-terminal --tab -e  "bash -c \''+cmd_monitor+'\'" --tab -e  "bash -c \''+cmd_monitor_tcp+'\'" &')
