@@ -48,7 +48,7 @@ Monitor_list=['true','false']
 
 NetworkIF_list=['lo','wlan0','eth0','eth1','vboxnet0']
 
-Robot_list=['virtual','turtlebot']
+Robot_list=['virtual','real']
 
 initPoses = {}
 
@@ -190,10 +190,10 @@ def run_experiment(MAP, NROBOTS, ALG_SHORT, LOC_MODE, GWAIT, COMMDELAY, TERM, TI
 	  #print gcmd
 	  os.system(gcmd)
          
-    elif (ROBOT=='turtlebot'):
-      cmd = 'bash -c \'roslaunch patrolling_sim turtlebot.launch robotname:=robot_'+str(FROM)+' robotid:='+str(FROM)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
+    elif (ROBOT=='real'):
+      cmd = 'bash -c \'roslaunch patrolling_sim real.launch robotname:=robot_'+str(FROM)+' robotid:='+str(FROM)+' mapname:='+MAP+' network_interface:='+NETWORK_IF +'\''
       if (TERM == 'xterm'):
-         os.system('xterm -e  "'+cmd+'" &')
+         os.system('xterm -hold -e  "'+cmd+'" &')
       else:
          os.system('gnome-terminal --tab -e  "'+cmd+'" &')
     

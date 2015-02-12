@@ -10,8 +10,8 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(find patrolling_sim)/maps/$(arg mapname)/$(arg mapname).yaml" />
   
   
-  <include file="$(find turtlebot_setup)/launch/navigation.launch" >
-	  <arg name="robot_name"  value="$(arg robotname)"/>
+  <include file="$(find patrolling_sim)/launch/robot_template.launch" >
+	  <arg name="robotname"  value="$(arg robotname)"/>
 	</include>
   
   <group ns="$(arg robotname)">    

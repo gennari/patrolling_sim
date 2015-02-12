@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+  <arg name="robotname" default="robot_0" />
+
+  <include file="$(find turtlebot_setup)/launch/navigation.launch" >
+	  <arg name="robot_name"  value="$(arg robotname)"/>
+	</include>
+
+</launch>
