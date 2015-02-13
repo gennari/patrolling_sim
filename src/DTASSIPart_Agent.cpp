@@ -171,7 +171,7 @@ void DTASSIPart_Agent::update_tasks(){
 
 /*debug print*/
 
-	printf("center location after %d \n",current_center_location);
+    printf("center location after %d \n",int(current_center_location));
 
 
 /*------------*/

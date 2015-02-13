@@ -103,9 +103,11 @@ protected:
 
     ros::Subscriber pose_sub;//, positions_sub;
     //ros::Publisher positions_pub;
-    ros::Subscriber results_sub,rcom_sub;
-    ros::Publisher results_pub,rcom_pub;
-    ros::Publisher cmd_vel_pub;
+    //ros::Subscriber results_sub;
+    ros::Subscriber rcom_sub;
+    //ros::Publisher results_pub;
+    ros::Publisher rcom_pub;
+    //ros::Publisher cmd_vel_pub;
 
     
 public:
@@ -143,7 +145,7 @@ public:
     void send_goal_reached();
     bool check_interference (int ID_ROBOT);
     void do_interference_behavior();
-    void backup();
+    //void backup();
     
     void onGoalNotComplete(); // what to do when a goal has NOT been reached (aborted)
     

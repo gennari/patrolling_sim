@@ -163,11 +163,11 @@ void PatrolAgent::init(int argc, char** argv) {
     
     if(ID_ROBOT==-1){
         strcpy (string1,"amcl_pose"); //string = "odom"
-        strcpy (string2,"cmd_vel"); //string = "cmd_vel"
+        //strcpy (string2,"cmd_vel"); //string = "cmd_vel"
         TEAMSIZE = 1;
     }else{
         sprintf(string1,"%s/amcl_pose",robotname.c_str());
-        sprintf(string2,"%s/cmd_vel",robotname.c_str());
+       // sprintf(string2,"%s/cmd_vel",robotname.c_str());
         TEAMSIZE = ID_ROBOT + 1;
     }
 
@@ -175,7 +175,7 @@ void PatrolAgent::init(int argc, char** argv) {
     listener = new tf::TransformListener();
 
     //Cmd_vel to backup:
-    cmd_vel_pub  = nh.advertise<geometry_msgs::Twist>(string2, 1);
+    //cmd_vel_pub  = nh.advertise<geometry_msgs::Twist>(string2, 1);
     
     //Subscrever para obter dados de "odom" do robot corrente
   //  odom_sub = nh.subscribe<nav_msgs::Odometry>(string1, 1, boost::bind(&PatrolAgent::odomCB, this, _1)); //size of the buffer = 1 (?)
@@ -574,7 +574,7 @@ bool PatrolAgent::check_interference (int ID_ROBOT){ //verificar se os robots es
     return false;
     
 }
-
+/*
 void PatrolAgent::backup(){
     
     while (backUpCounter<=100){
@@ -610,7 +610,7 @@ void PatrolAgent::backup(){
     }
     
 }
-
+*/
 void PatrolAgent::do_interference_behavior()
 {
     ROS_INFO("Interference detected! Executing interference behavior...\n");

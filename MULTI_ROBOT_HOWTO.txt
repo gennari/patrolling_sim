@@ -25,12 +25,18 @@ Example:
 
 You can use the same file with all the IPs in all the machines.
 
+4. Modify the launch file robot_template.launch in patrolling_sim/launch
+for use your own robot. The file have to run all the robot node for use move_base
+and amcl. The launchfile have to use an arg named robotname for the namespace.
+Patrolling node sends necessary commands to robots through /robot_name/move_base action server, 
+read the robot pose from the topic /robot_name/amcl_pose and provides the map with the 
+map_server on the topic /map.
 
-4. Start the script 'start_experiment_distributed.py' on all
+5. Start the script 'start_experiment_distributed.py' on all
 the robots.
 
 
-5. On each robot, select the map, the number of robots, the algorithm
+6. On each robot, select the map, the number of robots, the algorithm
 and other info in the launcher. Choose the proper network tcp_interface
 (e.g. wlan0) corresponding to the robot network.
 The only differences among the different robots should be these ones:
